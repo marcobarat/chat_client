@@ -1,0 +1,6 @@
+const dict = {
+  it: { login:'Accedi', logout:'Esci', register:'Registrati', username:'Username', password:'Password', confirm:'Conferma', gender:'Genere', rooms:'Stanze', admin_panel:'Admin', profile:'Profilo', create_room:'Crea stanza', room_name:'Nome stanza', description:'Descrizione', enter_room:'Entra', users:'Utenti online', afk:'AFK', send:'Invia', broadcast:'Broadcast', claim_owner:'Diventa owner', owner_password:'Password owner', type_message:'Scrivi un messaggio...' },
+  en: { login:'Login', logout:'Logout', register:'Register', username:'Username', password:'Password', confirm:'Confirm', gender:'Gender', rooms:'Rooms', admin_panel:'Admin', profile:'Profile', create_room:'Create room', room_name:'Room name', description:'Description', enter_room:'Enter', users:'Online users', afk:'AFK', send:'Send', broadcast:'Send broadcast', claim_owner:'Claim owner', owner_password:'Owner password', type_message:'Type a message...' }
+};
+const lang = (navigator.language||'it').startsWith('it') ? 'it' : 'en';
+export const t = (k) => dict[lang][k] || k;
