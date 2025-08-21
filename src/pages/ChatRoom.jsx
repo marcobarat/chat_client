@@ -18,6 +18,9 @@ export function highlightMentions(text, you){
   const re = new RegExp("@"+you.name.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&"), "ig");
   return text.replace(re, '<span class="mention">$&</span>');
 }
+export function limitMessage(text){
+  return text.slice(0,255);
+}
 function emojiRender(text){ return text.replace(/:coffee:/g,"☕").replace(/:heart:/g,"❤️"); }
 
 function ContextMenu({ x, y, onClose, actions = [] }) {
@@ -172,7 +175,7 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
   }, [messages]);
 
   const send = () => {
-    const v = inputRef.current.value.trim();
+    const v = limitMessage(inputRef.current.value.trim());
     if (!v) return;
     onUnreadChange?.(0);
     setPendingBelow(0);
@@ -298,6 +301,7 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
               ref={inputRef}
               placeholder={t("type_message")}
               className="chat-input"
+              maxLength={255}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   send();

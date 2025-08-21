@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { autolink, highlightMentions } from './ChatRoom.jsx';
+import { autolink, highlightMentions, limitMessage } from './ChatRoom.jsx';
 
 describe('ChatRoom helper functions', () => {
   it('autolink transforms URLs into anchor tags', () => {
@@ -12,5 +12,10 @@ describe('ChatRoom helper functions', () => {
     const input = 'hello @user';
     const expected = 'hello <span class="mention">@user</span>';
     expect(highlightMentions(input, { name: 'user' })).toBe(expected);
+  });
+
+  it('limitMessage truncates messages over 255 characters', () => {
+    const longText = 'a'.repeat(300);
+    expect(limitMessage(longText).length).toBe(255);
   });
 });
