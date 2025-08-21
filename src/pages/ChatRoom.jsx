@@ -46,7 +46,9 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
   const [roomId, setRoomId] = useState(typeof roomArg === "object" ? roomArg.id : roomArg);
   const [you, setYou] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [countUsers, setCountUsers] = useState([]);
+  // Track the number of users in the room. Start from 0 instead of an empty array
+  // so the initial render shows "0" users rather than nothing.
+  const [countUsers, setCountUsers] = useState(0);
   const [users, setUsers] = useState([]);
   const inputRef = useRef(null);
   const [menu, setMenu] = useState({ x: null, y: null, target: null });
