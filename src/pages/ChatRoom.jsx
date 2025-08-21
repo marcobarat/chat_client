@@ -7,8 +7,13 @@ const COMMON_EMOJI = ["😀","😂","😍","😎","😭","🤔","🙌","🔥","�
 const pad = (n) => (n < 10 ? "0" : "") + n;
 function fmt(ts){ const d=new Date(ts); return pad(d.getHours())+":"+pad(d.getMinutes()); }
 function dayLabel(ts){ const d=new Date(ts); return d.toLocaleDateString(); }
-function autolink(text){ return text.replace(/(https?:\/\/[^\s]+)/g,'<a class="autolink" target="_blank" rel="noreferrer" href="$1">$1</a>'); }
-function highlightMentions(text, you){
+export function autolink(text){
+  return text.replace(
+    /(https?:\/\/[^\s]+)/g,
+    '<a class="autolink" target="_blank" rel="noreferrer" href="$1">$1</a>'
+  );
+}
+export function highlightMentions(text, you){
   if(!you) return text;
   const re = new RegExp("@"+you.name.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&"), "ig");
   return text.replace(re, '<span class="mention">$&</span>');
