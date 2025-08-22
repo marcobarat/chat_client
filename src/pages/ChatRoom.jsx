@@ -174,6 +174,33 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
     };
   }, []);
 
+  // Impedisci connessioni multiple alla stessa stanza dallo stesso client
+  const sessionIdRef = useRef(Math.random().toString(36).slice(2));
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined" || !roomId) return;
+    const bc = new BroadcastChannel("chat-room-" + token);
+    const sessionId = sessionIdRef.current;
+    bc.onmessage = (ev) => {
+      const d = ev.data;
+      if (d?.type === "join" && d.roomId === roomId && d.sessionId !== sessionId) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: String(Math.random()),
+            system: true,
+            text: "Sei stato disconnesso perché hai aperto la stanza in un'altra scheda",
+            kind: "error",
+            ts: Date.now(),
+          },
+        ]);
+        try { sock.emit("room:disconnection", { roomId, roomName: roomId }); } catch {}
+        try { sock.disconnect(); } catch {}
+      }
+    };
+    bc.postMessage({ type: "join", roomId, sessionId });
+    return () => bc.close();
+  }, [roomId, sock, token]);
+
   // Aggiorna i privilegi e rimuove la password se necessario
   useEffect(() => {
     if (!you) return;
