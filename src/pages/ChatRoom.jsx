@@ -3,6 +3,8 @@ import { io } from "socket.io-client";
 import { SERVER_URL } from "../api.js";
 import { t } from "../i18n/init.js";
 
+const PRIV_ROLES = ["owner", "sysop", "admin"]; // ruoli che possono vedere la password della stanza
+
 const COMMON_EMOJI = ["😀","😂","😍","😎","😭","🤔","🙌","🔥","🎉","❤️","👍","☕"];
 const pad = (n) => (n < 10 ? "0" : "") + n;
 function fmt(ts){ const d=new Date(ts); return pad(d.getHours())+":"+pad(d.getMinutes()); }
@@ -82,12 +84,14 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
 
   // Banner “nuovi messaggi sotto”
   const [pendingBelow, setPendingBelow] = useState(0);
+  const canViewOwnerPw = you && PRIV_ROLES.includes(you.role);
 
   useEffect(() => {
     const s = io(SERVER_URL, { auth: { token } });
     setSock(s);
 
     s.on("room:joined", (p) => {
+      setOwnerPw(null); // reset password when joining a room
       setUsers(p.users); setYou(p.you); setRoomId(p.roomId);
       try { const u = new URL(window.location.href); u.searchParams.set("room", p.roomId); window.history.replaceState({}, "", u.toString()); } catch {}
       setTimeout(() => { try { inputRef.current?.focus(); } catch {} }, 50);
@@ -164,10 +168,19 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
     }
 
     return () => {
+      setOwnerPw(null); // clear stored password on exit
       s.emit("room:disconnection", { roomId: roomId, roomName: roomId });
       s.disconnect();
     };
   }, []);
+
+  // Aggiorna i privilegi e rimuove la password se necessario
+  useEffect(() => {
+    if (!you) return;
+    const me = users.find((u) => u.id === you.id);
+    if (me && me.role !== you.role) setYou(me);
+    if (!me || !PRIV_ROLES.includes(me.role)) setOwnerPw(null);
+  }, [users, you]);
 
   // Autoscroll quando già in fondo
   useEffect(() => {
@@ -339,7 +352,7 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
               ))}
             </div>
           )}
-          {ownerPw && (
+          {ownerPw && canViewOwnerPw && (
             <div className="tag">
               {t("owner_password")}: <code>{ownerPw}</code>
             </div>
