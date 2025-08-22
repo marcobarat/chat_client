@@ -99,6 +99,7 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
     s.on("room:joined", (p) => {
       setOwnerPw(null); // reset password when joining a room
       pendingOwnerPw.current = null;
+
       setUsers(p.users); setYou(p.you); setRoomId(p.roomId);
       youRef.current = p.you;
       try { const u = new URL(window.location.href); u.searchParams.set("room", p.roomId); window.history.replaceState({}, "", u.toString()); } catch {}
@@ -186,10 +187,39 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
       setOwnerPw(null); // clear stored password on exit
       pendingOwnerPw.current = null;
       youRef.current = null;
+
       s.emit("room:disconnection", { roomId: roomId, roomName: roomId });
       s.disconnect();
     };
   }, []);
+
+
+  // Impedisci connessioni multiple alla stessa stanza dallo stesso client
+  const sessionIdRef = useRef(Math.random().toString(36).slice(2));
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined" || !roomId) return;
+    const bc = new BroadcastChannel("chat-room-" + token);
+    const sessionId = sessionIdRef.current;
+    bc.onmessage = (ev) => {
+      const d = ev.data;
+      if (d?.type === "join" && d.roomId === roomId && d.sessionId !== sessionId) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: String(Math.random()),
+            system: true,
+            text: "Sei stato disconnesso perché hai aperto la stanza in un'altra scheda",
+            kind: "error",
+            ts: Date.now(),
+          },
+        ]);
+        try { sock.emit("room:disconnection", { roomId, roomName: roomId }); } catch {}
+        try { sock.disconnect(); } catch {}
+      }
+    };
+    bc.postMessage({ type: "join", roomId, sessionId });
+    return () => bc.close();
+  }, [roomId, sock, token]);
 
   // Aggiorna i privilegi e rimuove la password se necessario
   useEffect(() => {
@@ -209,6 +239,9 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
       pendingOwnerPw.current = null;
     }
   }, [you, ownerPw]);
+
+    if (!me || !PRIV_ROLES.includes(me.role)) setOwnerPw(null);
+  }, [users, you]);
 
   // Autoscroll quando già in fondo
   useEffect(() => {
