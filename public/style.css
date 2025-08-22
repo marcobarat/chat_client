@@ -40,7 +40,7 @@ input,select,textarea{ background:#0d1533; border:1px solid var(--muted); color:
 @keyframes fadeIn { from{ opacity:.0; transform: translateY(4px);} to{ opacity:1; transform:none;} }
 .chat-msg { display:flex; gap:8px; margin:6px 0; line-height:1.35 }
 .chat-msg .meta { opacity:.7; font-size:11px; min-width:64px; text-align:right }
-.chat-msg .bubble { background:var(--bubble); border:1px solid var(--muted); padding:8px 10px; border-radius:12px; flex:1; }
+.chat-msg .bubble { background:var(--bubble); border:1px solid var(--muted); padding:8px 10px; border-radius:12px; flex:1; min-width:0; overflow-wrap:anywhere; }
 .day-sep { text-align:center; margin:12px 0; opacity:.8; font-size:12px }
 .typing { opacity:.8; font-style:italic; padding:6px 10px }
 .mention { background:rgba(93,160,255,.2); border-bottom:1px dotted var(--accent) }
