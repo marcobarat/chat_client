@@ -61,13 +61,11 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
   const [countUsers, setCountUsers] = useState(0);
   const [users, setUsers] = useState([]);
   const inputRef = useRef(null);
-  const youRef = useRef(null);
   const [menu, setMenu] = useState({ x: null, y: null, target: null });
   const [pmOpen, setPmOpen] = useState(false);
   const [pmTarget, setPmTarget] = useState(null);
   const [pmText, setPmText] = useState("");
   const [ownerPw, setOwnerPw] = useState(null);
-  const pendingOwnerPw = useRef(null);
   const [showEmoji, setShowEmoji] = useState(false);
   const [typing, setTyping] = useState(null);
   const typingTimer = useRef(null);
@@ -89,19 +87,12 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
   const canViewOwnerPw = you && PRIV_ROLES.includes(you.role);
 
   useEffect(() => {
-    youRef.current = you;
-  }, [you]);
-
-  useEffect(() => {
     const s = io(SERVER_URL, { auth: { token } });
     setSock(s);
 
     s.on("room:joined", (p) => {
       setOwnerPw(null); // reset password when joining a room
-      pendingOwnerPw.current = null;
-
       setUsers(p.users); setYou(p.you); setRoomId(p.roomId);
-      youRef.current = p.you;
       try { const u = new URL(window.location.href); u.searchParams.set("room", p.roomId); window.history.replaceState({}, "", u.toString()); } catch {}
       setTimeout(() => { try { inputRef.current?.focus(); } catch {} }, 50);
       setTimeout(() => { scrollToBottom("auto"); setPendingBelow(0); }, 60);
@@ -145,14 +136,7 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
       ])
     );
 
-    s.on("room:owner_password", ({ password }) => {
-      if (PRIV_ROLES.includes(youRef.current?.role)) {
-        setOwnerPw(password);
-        pendingOwnerPw.current = null;
-      } else {
-        pendingOwnerPw.current = password;
-      }
-    });
+    s.on("room:owner_password", ({ password }) => setOwnerPw(password));
 
     s.on("chat:pm", (pm) => { setPmTarget(pm.from); setPmOpen(true); setPmText(pm.text || ""); });
 
@@ -185,14 +169,10 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
 
     return () => {
       setOwnerPw(null); // clear stored password on exit
-      pendingOwnerPw.current = null;
-      youRef.current = null;
-
       s.emit("room:disconnection", { roomId: roomId, roomName: roomId });
       s.disconnect();
     };
   }, []);
-
 
   // Impedisci connessioni multiple alla stessa stanza dallo stesso client
   const sessionIdRef = useRef(Math.random().toString(36).slice(2));
@@ -226,20 +206,6 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
     if (!you) return;
     const me = users.find((u) => u.id === you.id);
     if (me && me.role !== you.role) setYou(me);
-    if (!me || !PRIV_ROLES.includes(me.role)) {
-      setOwnerPw(null);
-      pendingOwnerPw.current = null;
-    }
-  }, [users, you]);
-
-  // Ensure owner password is shown after claiming ownership
-  useEffect(() => {
-    if (you && PRIV_ROLES.includes(you.role) && !ownerPw && pendingOwnerPw.current) {
-      setOwnerPw(pendingOwnerPw.current);
-      pendingOwnerPw.current = null;
-    }
-  }, [you, ownerPw]);
-
     if (!me || !PRIV_ROLES.includes(me.role)) setOwnerPw(null);
   }, [users, you]);
 
@@ -397,15 +363,7 @@ export default function ChatRoom({ roomId: roomArg, onExit, token, onUnreadChang
               </button>
             )}
             {you && (
-              <button
-                onClick={() => {
-                  const pw = prompt("Password stanza");
-                  if (pw) {
-                    pendingOwnerPw.current = pw;
-                    sock.emit("room:owner_claim", { roomId, password: pw });
-                  }
-                }}
-              >
+              <button onClick={()=>{ const pw = prompt("Password stanza"); if (pw) sock.emit("room:owner_claim", { roomId, password: pw }); }}>
                 {t("claim_owner")}
               </button>
             )}
